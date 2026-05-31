@@ -1,6 +1,6 @@
+using Unity.Netcode;
 using UnityEngine;
 using UnityEngine.InputSystem;
-using Unity.Netcode;
 public class PlayerController : NetworkBehaviour
 {
     [Header("Movimiento")]
@@ -17,6 +17,13 @@ public class PlayerController : NetworkBehaviour
 
     private bool isSprinting;
     private bool jumpRequested;
+
+    [Header("Ground Check")]
+    [SerializeField] private Transform groundCheck;
+    [SerializeField] private float groundDistance = 0.3f;
+    [SerializeField] private LayerMask groundLayer;
+
+    private bool isGrounded;
 
     private void Awake()
     {
@@ -58,16 +65,25 @@ public class PlayerController : NetworkBehaviour
 
         float speed = isSprinting ? sprintSpeed : walkSpeed;
 
-        //  Suelo
-        if (controller.isGrounded && yVelocity < 0)
+        // Comprobar suelo
+        isGrounded = Physics.CheckSphere(
+            groundCheck.position,
+            groundDistance,
+            groundLayer
+        );
+
+        // Mantener pegado al suelo
+        if (isGrounded && yVelocity < 0)
         {
-            yVelocity = -2f; // mantiene pegado al suelo
+            yVelocity = -2f;
         }
 
-        //  Salto
-        if (controller.isGrounded && jumpRequested)
+        // Salto
+        if (isGrounded && jumpRequested)
         {
-            yVelocity = jumpForce;
+            yVelocity = 0f;
+            yVelocity += jumpForce;
+
             jumpRequested = false;
         }
 
@@ -89,5 +105,14 @@ public class PlayerController : NetworkBehaviour
                 10f * Time.deltaTime
             );
         }
+    }
+
+
+    private void OnDrawGizmosSelected()
+    {
+        if (groundCheck == null) return;
+
+        Gizmos.color = Color.green;
+        Gizmos.DrawWireSphere(groundCheck.position, groundDistance);
     }
 }
