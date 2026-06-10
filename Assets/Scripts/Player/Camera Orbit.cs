@@ -7,16 +7,27 @@ public class CameraOrbit : MonoBehaviour
     public float distance;
     private Vector2 lookInput;
     public PlayerController player;
-    private void Start()
+    private bool cameraActive = false;
+    public void ActivateCamera()
     {
-        Cursor.lockState = CursorLockMode.Locked;
+        cameraActive = true;
+
+        Cursor.lockState =
+            CursorLockMode.Locked;
+
+        Cursor.visible = false;
     }
+
+
     public void OnLook(Vector2 input)
     {
         lookInput = input;
     }
     private void LateUpdate()
     {
+        if (player == null || follow == null)
+            return;
+
         Vector2 lookInput = player.GetLookInput();
         float hor = lookInput.x;
         if (hor != 0)

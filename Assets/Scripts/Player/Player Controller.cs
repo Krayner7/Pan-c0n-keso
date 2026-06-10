@@ -1,6 +1,5 @@
 using Unity.Netcode;
 using UnityEngine;
-using UnityEngine.InputSystem;
 public class PlayerController : NetworkBehaviour
 {
     [Header("Movimiento")]
@@ -25,28 +24,46 @@ public class PlayerController : NetworkBehaviour
 
     private bool isGrounded;
 
+    [SerializeField] private Transform cameraTarget;
+
+
+    public override void OnNetworkSpawn()
+    {
+        if (!IsOwner) return;
+
+        input.Player.Enable();
+
+        input.Player.Move.performed +=
+            ctx => moveInput = ctx.ReadValue<Vector2>();
+
+        input.Player.Move.canceled +=
+            ctx => moveInput = Vector2.zero;
+
+        input.Player.Sprint.performed +=
+            _ => isSprinting = true;
+
+        input.Player.Sprint.canceled +=
+            _ => isSprinting = false;
+
+        input.Player.Jump.performed +=
+            _ => jumpRequested = true;
+
+        CameraOrbit cam =
+            Camera.main.GetComponent<CameraOrbit>();
+
+        cam.follow = cameraTarget;
+        cam.player = this;
+
+        cam.ActivateCamera();
+    }
+
+    private void OnEnable() { }
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
         input = new PlayerInputActions();
     }
 
-    private void OnEnable()
-    {
-        input.Player.Enable();
-
-        input.Player.Move.performed += ctx => moveInput = ctx.ReadValue<Vector2>();
-        input.Player.Move.canceled += ctx => moveInput = Vector2.zero;
-
-        input.Player.Sprint.performed += _ => isSprinting = true;
-        input.Player.Sprint.canceled += _ => isSprinting = false;
-
-        input.Player.Jump.performed += _ => jumpRequested = true;
-    }
-    public Vector2 GetLookInput()
-    {
-        return input.Player.Look.ReadValue<Vector2>();
-    }
     private void OnDisable()
     {
         input.Player.Disable();
@@ -54,9 +71,14 @@ public class PlayerController : NetworkBehaviour
 
     private void Update()
     {
+        if (!IsOwner) return;
+
         HandleMovement();
     }
-
+    public Vector2 GetLookInput()
+    {
+        return input.Player.Look.ReadValue<Vector2>();
+    }
     private void HandleMovement()
     {
         //  Movimiento horizontal (relativo al player)
