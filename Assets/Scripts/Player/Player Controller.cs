@@ -17,6 +17,14 @@ public class PlayerController : NetworkBehaviour
     private bool isSprinting;
     private bool jumpRequested;
 
+    [Header("Recolectables")]
+    public bool isCarrying = false;
+    public int carriedValue = 0;
+
+    [Header("Puntos")]
+    public NetworkVariable<int> score =
+    new NetworkVariable<int>(0);
+
     [Header("Ground Check")]
     [SerializeField] private Transform groundCheck;
     [SerializeField] private float groundDistance = 0.3f;
@@ -29,7 +37,15 @@ public class PlayerController : NetworkBehaviour
 
     public override void OnNetworkSpawn()
     {
-        if (!IsOwner) return;
+        Debug.Log("Spawn player: " + OwnerClientId);
+
+        if (!IsOwner)
+        {
+            Debug.Log("No soy owner");
+            return;
+        }
+
+        Debug.Log("Soy owner");
 
         input.Player.Enable();
 
@@ -48,13 +64,30 @@ public class PlayerController : NetworkBehaviour
         input.Player.Jump.performed +=
             _ => jumpRequested = true;
 
-        CameraOrbit cam =
-            Camera.main.GetComponent<CameraOrbit>();
+        Debug.Log("Input conectado");
 
-        cam.follow = cameraTarget;
-        cam.player = this;
+        if (Camera.main != null)
+        {
+            CameraOrbit cam =
+                Camera.main.GetComponent<CameraOrbit>();
 
-        cam.ActivateCamera();
+            if (cam != null)
+            {
+                cam.follow = cameraTarget;
+                cam.player = this;
+                cam.ActivateCamera();
+
+                Debug.Log("Camara configurada");
+            }
+            else
+            {
+                Debug.LogError("No hay CameraOrbit");
+            }
+        }
+        else
+        {
+            Debug.LogError("No existe Camera.main");
+        }
     }
 
     private void OnEnable() { }
